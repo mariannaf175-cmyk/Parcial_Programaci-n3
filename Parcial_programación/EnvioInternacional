@@ -1,0 +1,26 @@
+public class EnvioInternacional extends Envio implements Asegurable {
+    EnvioInternacional(String guia, String rem, String dest, String destino, double peso,
+                       double l, double a, double h, double valor)
+            throws GuiaInvalidaException, PesoInvalidoException {
+        super(guia, rem, dest, destino, peso, l, a, h, valor);
+    }
+
+    String tipo() { return "Internacional"; }
+
+    @Override double pesoMaximo() { return 30; }   // maximo 30 kg
+
+    // base + por kilo + arancel del 10 % del valor declarado
+    double calcularFlete() {
+        return 60000 + 12000.0 * pesoFacturable() + 0.10 * getValorDeclarado();
+    }
+
+    @Override public double calcularSeguro() { return Math.max(0.01 * getValorDeclarado(), 5000); }
+
+    @Override double seguro() { return calcularSeguro(); }
+}
+
+
+
+
+
+

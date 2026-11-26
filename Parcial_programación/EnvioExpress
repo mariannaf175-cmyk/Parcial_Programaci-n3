@@ -1,0 +1,19 @@
+public class EnvioExpress extends Envio implements Asegurable {
+    EnvioExpress(String guia, String rem, String dest, String destino, double peso,
+                 double l, double a, double h, double valor)
+            throws GuiaInvalidaException, PesoInvalidoException {
+        super(guia, rem, dest, destino, peso, l, a, h, valor);
+    }
+
+    String tipo() { return "Express"; }
+
+    double calcularFlete() { return 15000 + 3500.0 * pesoFacturable(); }
+
+    @Override public double calcularSeguro() { return Math.max(0.01 * getValorDeclarado(), 5000); }
+
+    @Override double seguro() { return calcularSeguro(); }
+}
+
+
+
+

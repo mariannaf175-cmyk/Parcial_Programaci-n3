@@ -1,0 +1,20 @@
+public class EnvioEstandar extends Envio {
+    EnvioEstandar(String guia, String rem, String dest, String destino, double peso,
+                  double l, double a, double h, double valor)
+            throws GuiaInvalidaException, PesoInvalidoException {
+        super(guia, rem, dest, destino, peso, l, a, h, valor);
+    }
+
+    String tipo() { return "Estandar"; }
+
+    double calcularFlete() { return 8000 + 2000.0 * pesoFacturable(); }
+}
+
+
+
+
+
+
+
+
+

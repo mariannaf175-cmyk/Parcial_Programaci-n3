@@ -1,0 +1,19 @@
+public class TransicionInvalidaException extends Exception {
+    public TransicionInvalidaException(String msg) { super(msg); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

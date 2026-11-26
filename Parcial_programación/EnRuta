@@ -1,0 +1,40 @@
+public class EnRuta extends EstadoEnvio {
+    String nombre() { return "EnRuta"; }
+
+    @Override void entregado(Envio e) { e.cambiarEstado(new Entregado()); }
+
+    @Override void devuelto(Envio e) { e.cambiarEstado(new Devuelto()); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

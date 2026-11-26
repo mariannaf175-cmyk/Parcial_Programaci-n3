@@ -1,0 +1,249 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+
+public class PaqueLibre extends JFrame {
+    private final Repositorio repo = new Repositorio();
+
+    private final JTextField txtGuia = new JTextField(9);
+    private final JComboBox<String> cmbTipo =
+            new JComboBox<>(new String[]{"Estandar", "Express", "Internacional"});
+    private final JTextField txtRemitente = new JTextField(10);
+    private final JTextField txtDestinatario = new JTextField(10);
+    private final JTextField txtDestino = new JTextField(10);
+    private final JTextField txtPeso = new JTextField(5);
+    private final JTextField txtLargo = new JTextField(4);
+    private final JTextField txtAncho = new JTextField(4);
+    private final JTextField txtAlto = new JTextField(4);
+    private final JTextField txtValor = new JTextField(9);
+
+    private final DefaultTableModel modelo = new DefaultTableModel(
+            new String[]{"Guia", "Tipo", "Remitente", "Destinatario", "Destino", "Peso real",
+                    "Peso facturable", "Flete", "Seguro", "Total", "Estado"}, 0) {
+        @Override public boolean isCellEditable(int r, int c) { return false; }
+    };
+    private final JTable tabla = new JTable(modelo);
+
+    public PaqueLibre() {
+        super("PaqueLibre - Gestion de envios");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(5, 5));
+
+        // --- formulario ---
+        JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        form.add(new JLabel("Guia:")); form.add(txtGuia);
+        form.add(new JLabel("Tipo:")); form.add(cmbTipo);
+        form.add(new JLabel("Remitente:")); form.add(txtRemitente);
+        form.add(new JLabel("Destinatario:")); form.add(txtDestinatario);
+        form.add(new JLabel("Ciudad/Pais:")); form.add(txtDestino);
+        form.add(new JLabel("Peso (kg):")); form.add(txtPeso);
+        form.add(new JLabel("Largo:")); form.add(txtLargo);
+        form.add(new JLabel("Ancho:")); form.add(txtAncho);
+        form.add(new JLabel("Alto:")); form.add(txtAlto);
+        form.add(new JLabel("Valor declarado:")); form.add(txtValor);
+        add(form, BorderLayout.NORTH);
+
+        // --- tabla ---
+        add(new JScrollPane(tabla), BorderLayout.CENTER);
+        tabla.getSelectionModel().addListSelectionListener(ev -> {
+            int fila = tabla.getSelectedRow();
+            if (!ev.getValueIsAdjusting() && fila >= 0)
+                txtGuia.setText(modelo.getValueAt(fila, 0).toString());
+        });
+
+        // --- botones ---
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        botones.add(boton("Registrar", e -> registrar()));
+        botones.add(boton("Corregir peso", e -> corregirPeso()));
+        botones.add(boton("Corregir dimensiones", e -> corregirDimensiones()));
+        botones.add(boton("Pasar a EnRuta", e -> cambiar("EnRuta")));
+        botones.add(boton("Entregado", e -> cambiar("Entregado")));
+        botones.add(boton("Devuelto", e -> cambiar("Devuelto")));
+        botones.add(boton("Historial (R9)", e -> verHistorial()));
+        botones.add(boton("Por estado (R4)", e -> mostrar("Envios por estado", repo.consultaPorEstado())));
+        botones.add(boton("Casos de prueba", e -> ejecutarCasosDePrueba()));
+        add(botones, BorderLayout.SOUTH);
+
+        refrescarTabla();
+        setSize(1250, 520);
+        setLocationRelativeTo(null);
+    }
+
+    private JButton boton(String texto, java.awt.event.ActionListener l) {
+        JButton b = new JButton(texto);
+        b.addActionListener(l);
+        return b;
+    }
+
+    // ---------- utilidades de lectura ----------
+    private double num(JTextField t, String campo) {
+        try {
+            return Double.parseDouble(t.getText().trim().replace(',', '.'));
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("El campo '" + campo + "' debe ser un numero valido.");
+        }
+    }
+
+    private double valor() {
+        String s = txtValor.getText().replaceAll("[^0-9]", "");   // acepta 2.500.000 o $2500000
+        if (s.isEmpty()) throw new IllegalArgumentException("El campo 'Valor declarado' es obligatorio.");
+        return Double.parseDouble(s);
+    }
+
+    private Envio crearEnvio(String tipo, String guia, String rem, String dest, String destino,
+                             double peso, double l, double a, double h, double valor)
+            throws GuiaInvalidaException, PesoInvalidoException {
+        switch (tipo) {
+            case "Express":
+                return new EnvioExpress(guia, rem, dest, destino, peso, l, a, h, valor);
+            case "Internacional":
+                return new EnvioInternacional(guia, rem, dest, destino, peso, l, a, h, valor);
+            default:
+                return new EnvioEstandar(guia, rem, dest, destino, peso, l, a, h, valor);
+        }
+    }
+
+    // ---------- acciones ----------
+    private void registrar() {
+        try {
+            Envio e = crearEnvio((String) cmbTipo.getSelectedItem(), txtGuia.getText().trim(),
+                    txtRemitente.getText().trim(), txtDestinatario.getText().trim(), txtDestino.getText().trim(),
+                    num(txtPeso, "Peso"), num(txtLargo, "Largo"), num(txtAncho, "Ancho"),
+                    num(txtAlto, "Alto"), valor());
+            repo.agregar(e);
+            refrescarTabla();
+            JOptionPane.showMessageDialog(this, "Envio " + e.getGuia() + " registrado.");
+        } catch (Exception ex) {
+            error(ex);
+        }
+    }
+
+    private void corregirPeso() {
+        try {
+            repo.buscar(txtGuia.getText().trim()).corregirPeso(num(txtPeso, "Peso"));
+            repo.guardar();
+            refrescarTabla();
+        } catch (Exception ex) {
+            error(ex);
+        }
+    }
+
+    private void corregirDimensiones() {
+        try {
+            repo.buscar(txtGuia.getText().trim())
+                    .corregirDimensiones(num(txtLargo, "Largo"), num(txtAncho, "Ancho"), num(txtAlto, "Alto"));
+            repo.guardar();
+            refrescarTabla();
+        } catch (Exception ex) {
+            error(ex);
+        }
+    }
+
+    private void cambiar(String destino) {
+        try {
+            Envio e = repo.buscar(txtGuia.getText().trim());
+            aplicarTransicion(e, destino);
+            repo.guardar();
+            refrescarTabla();
+        } catch (Exception ex) {
+            error(ex);
+        }
+    }
+
+    private void aplicarTransicion(Envio e, String destino) throws TransicionInvalidaException {
+        if (destino.equals("EnRuta")) e.enRuta();
+        else if (destino.equals("Entregado")) e.entregado();
+        else e.devuelto();
+    }
+
+    private void verHistorial() {
+        try {
+            mostrar("Historial", repo.historial(txtGuia.getText().trim()));
+        } catch (Exception ex) {
+            error(ex);
+        }
+    }
+
+    private void error(Exception ex) {
+        JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void mostrar(String titulo, String texto) {
+        JTextArea area = new JTextArea(texto);
+        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        area.setEditable(false);
+        JScrollPane sp = new JScrollPane(area);
+        sp.setPreferredSize(new Dimension(620, 300));
+        JOptionPane.showMessageDialog(this, sp, titulo, JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void refrescarTabla() {
+        modelo.setRowCount(0);
+        for (Envio e : repo.todos()) {
+            modelo.addRow(new Object[]{e.getGuia(), e.tipo(), e.getRemitente(), e.getDestinatario(),
+                    e.getDestino(), e.getPeso() + " kg", e.pesoFacturable() + " kg",
+                    Repositorio.dinero(e.calcularFlete()), Repositorio.dinero(e.seguro()),
+                    Repositorio.dinero(e.total()), e.getEstado()});
+        }
+    }
+
+    // ---------- casos de prueba ----------
+    @FunctionalInterface
+    private interface Accion { void ejecutar() throws Exception; }
+
+    private void intento(StringBuilder log, String descripcion, Accion a) {
+        try {
+            a.ejecutar();
+            log.append("OK     ").append(descripcion).append('\n');
+        } catch (Exception ex) {
+            log.append("ERROR  ").append(descripcion).append("\n         -> ")
+                    .append(ex.getClass().getSimpleName()).append(": ").append(ex.getMessage()).append('\n');
+        }
+    }
+
+    private void ejecutarCasosDePrueba() {
+        StringBuilder log = new StringBuilder();
+
+        intento(log, "1. Estandar PL-000101 (4,2 kg, 30x20x15, $150.000)", () ->
+                repo.agregar(new EnvioEstandar("PL-000101", "Ana Perez", "Luis Gomez", "Medellin",
+                        4.2, 30, 20, 15, 150000)));
+
+        intento(log, "2. Express PL-000102 (1,5 kg, 50x40x30, $300.000)", () ->
+                repo.agregar(new EnvioExpress("PL-000102", "Carlos Ruiz", "Maria Diaz", "Cali",
+                        1.5, 50, 40, 30, 300000)));
+
+        intento(log, "3. Internacional PL-000103 (12 kg, 40x30x30, $2.500.000)", () ->
+                repo.agregar(new EnvioInternacional("PL-000103", "Sofia Torres", "John Smith", "Estados Unidos",
+                        12, 40, 30, 30, 2500000)));
+
+        intento(log, "4a. Corregir peso de PL-000101 a 6,8 kg", () ->
+                repo.buscar("PL-000101").corregirPeso(6.8));
+        intento(log, "4b. PL-000101 -> EnRuta", () -> repo.buscar("PL-000101").enRuta());
+        intento(log, "4c. PL-000101 -> Entregado", () -> repo.buscar("PL-000101").entregado());
+
+        intento(log, "5. Corregir peso de PL-000101 ya entregado", () ->
+                repo.buscar("PL-000101").corregirPeso(7.5));
+
+        intento(log, "6a. PL-000102 -> EnRuta", () -> repo.buscar("PL-000102").enRuta());
+        intento(log, "6b. PL-000102 -> Devuelto", () -> repo.buscar("PL-000102").devuelto());
+        intento(log, "6c. PL-000102 -> Entregado (no permitido)", () -> repo.buscar("PL-000102").entregado());
+
+        intento(log, "7. Registrar internacional de 35 kg", () ->
+                repo.agregar(new EnvioInternacional("PL-000104", "Pedro Mora", "Anna Müller", "Alemania",
+                        35, 40, 30, 30, 1000000)));
+
+        repo.guardar();
+        refrescarTabla();
+        log.append("\n8. Cierre la aplicacion y vuelva a abrirla: la tabla se carga desde envios.dat.\n");
+        log.append("   Use 'Historial (R9)' con PL-000102 para ver su historial.\n");
+        mostrar("Resultado de los casos de prueba", log.toString());
+    }
+}
+
+
+
+
+
+
+
+

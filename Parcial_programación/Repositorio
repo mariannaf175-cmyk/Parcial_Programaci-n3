@@ -1,0 +1,96 @@
+import java.io.*;
+import java.util.*;
+import java.time.format.DateTimeFormatter;
+
+public class Repositorio {
+    private static final String ARCHIVO = "envios.dat";
+    private Map<String, Envio> envios = new LinkedHashMap<>();
+
+    @SuppressWarnings("unchecked")
+    Repositorio() {
+        File f = new File(ARCHIVO);
+        if (f.exists()) {
+            try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(f))) {
+                envios = (Map<String, Envio>) in.readObject();
+            } catch (Exception ex) {
+                envios = new LinkedHashMap<>();
+            }
+        }
+    }
+
+    void guardar() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(ARCHIVO))) {
+            out.writeObject(envios);
+        } catch (IOException ex) {
+            System.err.println("No se pudo guardar: " + ex.getMessage());
+        }
+    }
+
+    void agregar(Envio e) throws GuiaInvalidaException {
+        if (envios.containsKey(e.getGuia()))
+            throw new GuiaInvalidaException("Ya existe un envio con la guia " + e.getGuia() + ".");
+        envios.put(e.getGuia(), e);
+        guardar();
+    }
+
+    Envio buscar(String guia) throws GuiaInvalidaException {
+        Validador.validarGuia(guia);
+        Envio e = envios.get(guia);
+        if (e == null) throw new GuiaInvalidaException("No existe el envio con guia " + guia + ".");
+        return e;
+    }
+
+    Collection<Envio> todos() { return envios.values(); }
+
+    // R4 a) numero de envios y total facturado por estado
+    String consultaPorEstado() {
+        String[] estados = {"Registrado", "EnRuta", "Entregado", "Devuelto"};
+        StringBuilder sb = new StringBuilder(String.format("%-12s %8s %18s%n", "Estado", "Envios", "Total facturado"));
+        for (String est : estados) {
+            int cant = 0;
+            double total = 0;
+            for (Envio e : envios.values()) {
+                if (e.getEstado().equals(est)) {
+                    cant++;
+                    total += e.total();
+                }
+            }
+            sb.append(String.format("%-12s %8d %18s%n", est, cant, dinero(total)));
+        }
+        return sb.toString();
+    }
+
+    // R9 b) historial de estados de una guia
+    String historial(String guia) throws GuiaInvalidaException {
+        Envio e = buscar(guia);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        StringBuilder sb = new StringBuilder("Historial de " + guia + ":\n");
+        for (CambioEstado c : e.getHistorial())
+            sb.append(String.format("  %-12s %s%n", c.getEstado(), c.getFechaHora().format(fmt)));
+        return sb.toString();
+    }
+
+    static String dinero(double v) { return String.format("$%,.0f", v); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

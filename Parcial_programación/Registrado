@@ -1,0 +1,20 @@
+public class Registrado extends EstadoEnvio {
+    String nombre() { return "Registrado"; }
+
+    @Override void enRuta(Envio e) { e.cambiarEstado(new EnRuta()); }
+
+    @Override void corregirPeso(Envio e, double peso) throws PesoInvalidoException {
+        Validador.validarPeso(peso, e.pesoMaximo());
+        e.setPeso(peso);
+    }
+
+    @Override void corregirDimensiones(Envio e, double l, double a, double h) throws PesoInvalidoException {
+        Validador.validarDimensiones(l, a, h);
+        e.setDimensiones(l, a, h);
+    }
+}
+
+
+
+
+

@@ -1,0 +1,30 @@
+import java.io.Serializable;
+
+public abstract class EstadoEnvio implements Serializable {
+    abstract String nombre();
+
+    void enRuta(Envio e) throws TransicionInvalidaException {
+        throw new TransicionInvalidaException("Transicion no permitida: de " + nombre() + " a EnRuta.");
+    
+
+    void entregado(Envio e) throws TransicionInvalidaException {
+        throw new TransicionInvalidaException("Transicion no permitida: de " + nombre() + " a Entregado.");
+    }
+
+    void devuelto(Envio e) throws TransicionInvalidaException {
+        throw new TransicionInvalidaException("Transicion no permitida: de " + nombre() + " a Devuelto.");
+    }
+
+    void corregirPeso(Envio e, double peso) throws TransicionInvalidaException, PesoInvalidoException {
+        throw new TransicionInvalidaException("No se puede corregir el peso en estado " + nombre() + ".");
+    }
+
+    void corregirDimensiones(Envio e, double l, double a, double h)
+            throws TransicionInvalidaException, PesoInvalidoException {
+        throw new TransicionInvalidaException("No se pueden corregir las dimensiones en estado " + nombre() + ".");
+    }
+}
+
+
+
+

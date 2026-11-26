@@ -1,0 +1,33 @@
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+public class CambioEstado implements Serializable {
+    private final String estado;
+    private final LocalDateTime fechaHora;
+
+    CambioEstado(String estado, LocalDateTime fechaHora) {
+        this.estado = estado;
+        this.fechaHora = fechaHora;
+    }
+
+    String getEstado() { return estado; }
+    LocalDateTime getFechaHora() { return fechaHora; }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

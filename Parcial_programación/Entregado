@@ -1,0 +1,10 @@
+public class Entregado extends EstadoEnvio {
+    String nombre() { return "Entregado"; }
+}
+
+
+
+
+
+
+
